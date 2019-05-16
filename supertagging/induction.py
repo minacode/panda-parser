@@ -113,11 +113,11 @@ def choose_middle(elements):
     elements = sorted(elements)
     length = len(elements)
     div = (length - 1) // 2
-    return elements[div]
+    return {elements[div]}
 
 
 def choose_random(elements):
-    return choice(list(elements))
+    return {choice(list(elements))}
 
 
 def old_choice(elements):

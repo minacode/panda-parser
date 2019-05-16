@@ -402,6 +402,9 @@ class HybridTree:
         """
         return self.__n_nodes_below(self.virtual_root)
 
+    def n_yield_nodes(self):
+        return len(self.__ordered_ids)
+
     def __n_nodes_below(self, id):
         """
         :param id: node id

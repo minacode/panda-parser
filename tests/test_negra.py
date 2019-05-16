@@ -9,7 +9,8 @@ from grammar.induction.terminal_labeling import the_terminal_labeling_factory, F
 from supertagging.induction import \
     induce, PartitionBuilder, pretty_print_partition, sorted_even_k_split, choose_middle, spans_split, flat_wide_split, \
     monadic_split, random_split, choose_random, non_lexicalized_partition, span_child_substitution_sequence, \
-    srp_to_trp, nonterminal_labeling_strict, rule_classes_created_terminals, sorted_even_2_split, sorted_even_3_split
+    srp_to_trp, nonterminal_labeling_strict, rule_classes_created_terminals, sorted_even_2_split, sorted_even_3_split, \
+    choose_min, choose_max
 from tests.test_induction import hybrid_tree_1
 from hybridtree.general_hybrid_tree import HybridTree
 
@@ -113,11 +114,11 @@ class MyTestCases(unittest.TestCase):
         # trees = [self.get_single_tree()]
         # trees = [hybrid_tree_1()]
         trees = self.get_whole_corpus()
-        # print(trees[0])
+        print(trees[0])
         partition_builders = []
         for choice_function in [
-            min,
-            max,
+            choose_min,
+            choose_max,
             choose_middle,
             # choose_random
         ]:
