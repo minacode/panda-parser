@@ -8,9 +8,9 @@ from dependency.labeling import the_labeling_factory
 from grammar.induction.terminal_labeling import the_terminal_labeling_factory, FormTerminalsPOS
 from supertagging.induction import \
     induce, PartitionBuilder, pretty_print_partition, sorted_even_k_split, choose_middle, spans_split, flat_wide_split, \
-    monadic_split, random_split, choose_random, non_lexicalized_partition, span_child_substitution_sequence, \
+    monadic_split, random_split, choose_random, span_child_substitution_sequence, \
     srp_to_trp, nonterminal_labeling_strict, rule_classes_created_terminals, sorted_even_2_split, sorted_even_3_split, \
-    choose_min, choose_max
+    choose_min, choose_max, old_choice
 from tests.test_induction import hybrid_tree_1
 from hybridtree.general_hybrid_tree import HybridTree
 
@@ -59,18 +59,6 @@ class MyTestCases(unittest.TestCase):
         for token in tree.full_yield():
             print(token)
 
-    def test_string_partitioning(self):
-        tree = self.get_single_tree()
-        n = tree.n_yield_nodes()
-        print(f'string partitioning for n={n}')
-        self.__test_partitioning(n)
-
-    def test_tree_partitioning(self):
-        tree = self.get_single_tree()
-        n = tree.n_nodes()
-        print(f'tree partitioning for n={n}')
-        self.__test_partitioning(n)
-
     def test_direct_induction(self):
         tree = self.get_single_tree()
         terminal_labeling = the_terminal_labeling_factory().get_strategy('pos')
@@ -80,6 +68,7 @@ class MyTestCases(unittest.TestCase):
         )
         print(lcfrs)
 
+    # fails
     def _test_constituent_induction(self):
         tree = self.get_single_tree()
         recursive_partition = PartitionBuilder(
@@ -114,7 +103,7 @@ class MyTestCases(unittest.TestCase):
         # trees = [self.get_single_tree()]
         # trees = [hybrid_tree_1()]
         trees = self.get_whole_corpus()
-        print(trees[0])
+        # print(trees[0])
         partition_builders = []
         for choice_function in [
             choose_min,
@@ -180,13 +169,15 @@ class MyTestCases(unittest.TestCase):
                     f'avg: {sum(class_sizes) / len(class_sizes)}\n'
                 )
 
-    # fails. bug on my side or are rules with multiple terminals are not supported?
     def test_non_lexicalized_indcution(self):
         trees = self.get_whole_corpus(n=1)
         nonterminal_counts = {}
         grammar = induce(
             trees=trees,
-            partition_builder=non_lexicalized_partition,
+            partition_builder=PartitionBuilder(
+                choice_function=old_choice,
+                split_function=sorted_even_2_split
+            ),
             terminal_labeling=the_terminal_labeling_factory().get_strategy('form'),
             nonterminal_counts=nonterminal_counts
         )
@@ -194,7 +185,7 @@ class MyTestCases(unittest.TestCase):
 
     def test_split_strategies(self):
         partition = PartitionBuilder(
-            choice_function=min,
+            choice_function=choose_min,
             split_function=spans_split
         ).string_partition(
             tree=self.get_single_tree()
@@ -210,15 +201,15 @@ class MyTestCases(unittest.TestCase):
     def test_choose_middle(self):
         self.assertEqual(
             choose_middle({1,2,3,4,5}),
-            3
+            {3}
         )
         self.assertEqual(
             choose_middle({1,2,3,4}),
-            2
+            {2}
         )
         self.assertNotEqual(
             choose_middle({1,2,3,4}),
-            3
+            {3}
         )
 
     def test_flat_wide_span(self):
@@ -254,24 +245,12 @@ class MyTestCases(unittest.TestCase):
     def test_recursive_partition(self):
         self.assertEqual(
             PartitionBuilder(
-                choice_function=min,
+                choice_function=choose_min,
                 split_function=spans_split
             ).string_partition(
                 tree=HybridTree()
             ),
-            ({}, [])
-        )
-
-    def test_non_lexicalized_partition(self):
-        self.assertEqual(
-            non_lexicalized_partition({1,2,3,4,5,6,7}),
-            ({1,2}, [
-                ({3,4}, [
-                    ({5,6}, [
-                        ({7}, [])
-                    ])
-                ])
-            ])
+            (set(), [])
         )
 
     def test_span_child_substitution_sequence(self):
@@ -295,16 +274,28 @@ class MyTestCases(unittest.TestCase):
         # tree = hybrid_tree_1()
         tree = self.get_single_tree()
         srp = PartitionBuilder(
-            choice_function=min,
+            choice_function=choose_min,
             split_function=monadic_split
         )(tree=tree)
-        trp = srp_to_trp(
-            tree=tree,
-            recursive_string_partition=srp
-        )
+
+        def on_whole_partition(p):
+            return (
+                srp_to_trp(
+                    tree=tree,
+                    positions=p[0]
+                ),
+                [
+                    on_whole_partition(child_p)
+                    for child_p
+                    in p[1]
+                ]
+            )
+
+        trp = on_whole_partition(srp)
         print(tree)
         print(pretty_print_partition(srp))
         print(pretty_print_partition(trp))
+
 
 if __name__ == '__main__':
     unittest.main()

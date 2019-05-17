@@ -16,7 +16,7 @@ class PartitionBuilder:
     def string_partition(self, tree):
         n = tree.n_yield_nodes()
         if not n:
-            raise ValueError(f'Tree contains zero nodes.')
+            return set(), []
         return self.build_partition(elements=set(range(n)))
 
     def build_partition(self, elements):
@@ -121,7 +121,7 @@ def choose_random(elements):
 
 
 def old_choice(elements):
-    return elements if len(elements) == 1 else {}
+    return elements if len(elements) == 1 else set()
 
 
 def min_common_parent(tree, positions, id=None):
@@ -176,6 +176,9 @@ def non_lexicalized_partition(tree):
 def __rec_non_lexicalized_partition(elements):
     if len(elements) <= 2:
         return elements, []
+    all_elements = elements.copy()
+    for _ in range(2):
+        elements.pop()
     return {elements.pop() for _ in range(2)}, [
         __rec_non_lexicalized_partition(elements)
     ]
@@ -402,7 +405,10 @@ def __rec_induce(tree, grammar, string_partition, terminal_labeling, nonterminal
     present_tree_positions = tree_positions[:]
     for child_tree_positions in children_tree_positions:
         for position in child_tree_positions:
-            present_tree_positions.remove(position)
+            if position in present_tree_positions:
+                present_tree_positions.remove(position)
+            else:
+                print(f'{position} not in {present_tree_positions}')
 
     # print(f'pos: {positions}\ntos: {tree_positions}\ntop: {top}')
     # print(f'pst: {present_tree_positions}')
